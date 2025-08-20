@@ -1,0 +1,13 @@
+- hosts: loacl
+  tasks:
+    - name: get files
+      block:
+        - get_url:
+            url: "http://{{item}}/index.html"
+            dest: "/tmp/{{item}}"
+          with_items:
+            - localhost
+      rescue:
+        - debug: msg="The file doesn't exists"
+      always:
+        - debug: msg="The play done"

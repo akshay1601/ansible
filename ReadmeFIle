@@ -1,0 +1,275 @@
+We get the Changed= true when we execute the command 1st time and then 2nd time when 2nd time it will be
+success because that is the state of system which is desired state.
+
+Ansible alwsay check Actual state with desired state, if there is no chnaged then it is success state,
+If there is chnage then the state will be Chnaged state.
+
+Module Ping to check the connectiom
+# ansible -m ping localhost
+
+Module file to create the file and directory, Replace touch with directory to create the directory.
+# ansible -m file -a "dest=test state=touch" localhost
+
+Module to remove the file and directory,
+# ansible -m file -a "dest=test state=absent" localhost
+
+CHeck the document for Module 
+# ansible-doc <ModuelName>
+
+Module Copy to add content on the file, to move the file 
+# ansible -m copy -a "dest=test content=world" localhost
+# ansible -m copy -a "src=test dest=bro" localhost
+
+Check Mode will take us though every part of the process, excepts actully replacing the file.
+CHeck if there is any chnage without changing any configuration.   
+# ansible -m copy -a "src=test dest=bro" localhost --check 
+
+Diff mode to check what  will be changed after the configuration,
+# ansible -m copy -a "src=test dest=bro" localhost --check --diff
+
+Module timezone to chnabge the time zone.
+# ansible -m timezone -a "name=AMerica/New_York" localhost
+
+Inventory - Set of node where all command got executed.
+Need to add the IP and hostname in /etc/hosts file to get it work. 
+# ansible -i 'p1,' -m ping p1
+# ansible -i 'p1,p2,' -m ping all
+
+Module Command that will execute on set of nodes,
+# ansible -i 'p1,p2' -m command -a 'date' all
+# ansible -i 'p1,p2,p3' -m command -a 'date' '!p3' that will exclude the p3 as this is not present in
+host and will give error if not mentioned !p3 in command.
+
+Inventory - We can create the inventory file to setup the nodes,
+Create file with any name my_inventory add nodes hostname, p[1:2]
+# ansible -i my_inventory -m ping all
+# ansible -i my_inventory -m command -a 'date' all
+
+Inventory - We can use /etc/ansible/ansible.cfg this file to use defaults inventory,
+[defaults]
+inventory=/home/ubuntu/my_inventory
+And under Inventory file my_inventory use 
+p[1:2]
+SO we can drop the invetory file form the command it take it from the configuration.
+# ansible -m command -a 'date' all
+
+ansible-config will be doing the below work,
+    list                Print all config options
+    dump                Dump configuration
+    view                View configuration file
+    init                Create initial configuration
+    validate            Validate the configuration file and environment variables. By default it only checks the base settings without accounting for plugins (see -t).
+
+# ansible-config dump --only-changed - will check what has been chnaged in ansible.cfg file.
+# ansible-config dump - will show all configuration for config file. -- Green- no changes, yellow- something is changed.
+# ansible-config list -- Shows the document configurations.
+
+ansible-inventory -- will help you get the all you invetory in format
+# ansible-inventory --list  --yaml -- it will show inventory in yaml format. 
+
+--become flag is used to give privileges to the ansible to run command on remote that require the root 
+privileges.
+
+# ansible -m timezome -a 'name=America/Chicago' all --become 
+
+--ask-become-pass -- will ask the prompt password in the console 
+# ansible -m timezome -a 'name=America/Chicago' localhost --become --ask-become-pass 
+
+--------------------------------------------------------------------------------------------------
+
+-tags in the command help to run that following task in the playbook.
+# ansible-playbook playbook.yml --check --tags webdeploy,
+Example: This is used to tag one module only with copy
+- hosts: all
+  become: yes
+  tasks:
+    - name: Copy file
+      copy:
+        src: test
+        dest: test
+      tags:
+        - webdeploy
+
+Other Example: This is used to tag one module only with copy
+- name: add content on file
+  hosts: all
+  tasks:
+    - copy:
+        src: test
+        dest: people
+      tags: apache
+    - file:
+        dest: testnew
+        state: touch
+
+Other Example: This is used to tag whole task with module copy and file 
+- name: add content on file
+  hosts: all
+  tags: apache
+  tasks:
+    - copy:
+        src: test
+        dest: people     
+    - file:
+        dest: testnew
+        state: touch
+
+---------------------------------------------------------------------
+
+diff: true   --- check what will be the diffrenece in the file or the configuration but will change it.
+check_mode: true -- check what going to be changed in remote without changing it.
+# ansible-playbook playbook.yml --check  --diff
+
+Example:
+- hosts: all
+  become: yes
+  tasks:
+    - name: Copy file
+      diff: true
+      check_mode: true
+      copy:
+        src: test
+        dest: bro
+      tags:
+        - webdeploy
+
+You can use check_mode and diff for single module or the whole task as you can refer -tags fro examples
+
+--------------------------------------------------------------------------
+Under module apt
+we have attribute to update the server packages before installing any package.
+- hosts: all
+  become: yes
+  tasks:
+    - name: updating os
+     apt:
+       name: apache2
+       update_cache: true
+    - name: install apache
+      apt:
+        name: apache2
+        state: latest
+    - name: enable https
+      service:
+        name: apache2
+        state: started
+        enabled: yes
+
+ --------------------------------------------------------------------------
+
+ # ansible -m setup all -a "filter=ansible_distribution*"
+ The command show the OS ditribution for all the invetory.
+ We see the gathering fact in ansible-play output behind the scene we are running this setup module 
+ So you have that information availble to feed into your configuration.
+
+ --------------------------------------------------------------------------
+
+Debug Module to display the facts.
+  tasks:
+    - name: dump some facts
+     debug:
+        var: ansible_distribution
+ --------------------------------------------------------------------------
+
+Conditional tasks with the -when keyword
+So here you can put the condition on basis of any thing like distribution or other, to run the command
+On below exmaple we are putting condition that if the distribution is ubuntu only that module will
+run else it will skip other and vice versa for Rehdat.
+Example:
+- name: Installing apache on ubuntu
+  hosts: all
+  tags: apache
+  tasks:
+    - name: dump some facts
+      debug:
+        var: ansible_distribution
+      when: ansible_distribution == "Ubuntu"
+    - name: install apache
+      apt:
+        name: apache2
+        state: latest
+      when: ansible_distribution == "Ubuntu"
+    - name: enable https
+      service:
+        name: apache2
+        state: started
+        enabled: yes
+      when: ansible_distribution == "Ubuntu"
+    - name: Add content in the file
+      diff: true
+      copy:
+        dest: /var/www/html/index.html
+        content: helloworldnewdone
+- name: Installing httpd on redhat 
+  hosts: all
+  become: true
+  tasks:
+    - name: dump some facts
+      debug:
+        var: ansible_distribution
+      when: ansible_distribution == "RedHat"
+    - name: install httpd
+      dnf:
+        name: httpd
+        state: latest
+      when: ansible_distribution == "RedHat"
+    - name: enable httpd
+      service:
+        name: httpd
+        state: started
+        enabled: yes
+      when: ansible_distribution == "RedHat"
+
+--------------------------------------------------------------------------
+To disable the gathering fact in ansible playbook output
+gather_facts: false 
+use above attibute in the playbook 
+--------------------------------------------------------------------------
+
+gather_subset: 
+Gathers facts about remote hosts 
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/setup_module.html
+Example:
+- hosts: all
+  gather_subset:
+    - "!min"
+    - processor
+  tasks:
+    - debug:
+        var: ansible_facts
+
+--------------------------------------------------------------------------
+
+# ansible-doc -t keyword <gather_facts, become, hosts, etc>
+Above command help to get all details about the attibute.
+# ansible-doc --list -- show all module list
+--------------------------------------------------------------------------
+
+# ansible-galaxy collection list
+The command show the collection list. 
+# ansible-galaxy collection install <namespace>.<collection_name>
+# ansible-galaxy collection install community.general
+
+2. Installing from a Local Tarball (Offline):
+If you have downloaded a collection as a .tar.gz archive, you can install it locally.
+Code
+
+# ansible-galaxy collection install /path/to/your/collection-archive.tar.gz
+4. Installing Multiple Collections with a Requirements File:
+For managing multiple collections, a requirements.yml file can be used:
+Code
+
+# requirements.yml
+collections:
+  - community.general
+  - ansible.posix
+  - my_namespace.my_collection:==1.0.0
+Then, install them using:
+Code
+
+# ansible-galaxy collection install -r requirements.yml
+5. Specifying Installation Path:
+By default, collections are installed in ~/.ansible/collections. You can specify an alternative installation path using the -p or --collections-path option:
+Code
+
+# ansible-galaxy collection install community.general -p /path/to/my_project/collections

@@ -1,0 +1,61 @@
+- name: Configure managed host
+  hosts: web_server
+  become: true
+  tasks:
+    - name: Configure basic reachibility to managed host
+      ansible.builtin.ping:
+    - name: Populate MOTDbanner file with content
+      ansible.builtin.copy:
+        content: "{{ banner }}\n"
+        dest: /etc/motd
+    - name: Create user in web-server
+      ansible.builtin.user:
+        name: ansible
+    - name: create mutiple users for web-server
+      ansible.builtin.user:
+        name: "{{ item }}"
+      with_items: "{{ user }}"
+- name: configure managed DB host
+  hosts: db
+  become: true
+  tasks:
+    - name: Configure basic reachibility to managed host
+      ansible.builtin.ping:
+    - name: Populate MOTDbanner file with content
+      ansible.builtin.copy:
+        content: "{{ banner }}\n"
+        dest: /etc/motd
+      tags: files
+    - name: Create user in db
+      ansible.builtin.user:
+        name: ansible
+    - name: create mutiple users for DB
+      ansible.builtin.user:
+        name: "{{ item }}"
+      with_items: "{{ user }}"
+- name: Create file on both the server at a time
+  hosts: all
+  become: true
+  tasks:
+    - name: Create directory /backup
+      ansible.builtin.file:
+        path: /backup
+        state: directory
+        owner: ansible
+        group: service_account
+        mode: 0644
+    - name: Create group in all server
+      ansible.builtin.group:
+        name: service_account
+      tags: accounts
+    - name:
+      ansible.builtin.apt:
+        name: python3-passlib
+        state: latest
+    - name: Add user in group
+      ansible.builtin.user:
+        name: "{{ item }}"
+        group:
+          - service_account
+        password: '$6$YXNRO9tnMo4oXkjs$owx/goAGi1mEApjIJNty4UFTq7qX7QxoAKXpi1H/BXq4YjDHdLvXxTEQNuVz2IrrPadG2ch7zq1hQJSKDMhB9/'
+      with_items: "{{ user }}"

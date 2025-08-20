@@ -1,0 +1,70 @@
+Ansible install with python and pip3
+https://github.com/g0t4/course2-ansible-gs/tree/master/install
+
+Installtion for other distro
+https://docs.ansible.com/ansible/latest/installation_guide/installation_distros.html#requirements-for-adding-new-distributions
+###########################
+sudo dnf install python3.11 -y
+sudo dnf install python3.11-pip -y
+python3.11 -m pip install ansible
+############################
+
+Autocomplication ansible commands 
+#############################
+python3.11 -m pip install argcomplete
+activate-global-python-argcomplete
+source /home/ec2-user/.zshenv
+source  /home/ec2-user/.bash_completion
+##############################
+Autocomplication ansible commands for ubuntu
+sudo apt-get install python3-argcomplete
+sudo activate-global-python-argcomplete
+##############################
+
+
+Configure SSH with Traget node 
+https://jay75chauhan.medium.com/install-ansible-on-ubuntu-and-configure-a-control-node-and-a-target-node-d40ab145c153
+
+Configuration ansible.cfg 
+
+To check what config has beed changed  in ansible.cfg
+############
+ansible-config dump --only-changed
+
+To check config list 
+############
+ansible-config list
+
+For default inventory to be used on the command
+###########
+[defaults]
+inventory=/home/ec2-user/inventroty
+
+Use --diff mode to check what will be change on the Managed host(Client servers) It shows what going to be change
+##########
+[diff]
+always = true
+
+##########
+Use --check mode will use to check the changed status for all the managed hosts.
+
+
+To check the inventory list which is in /etc/ensible/hosts i.e all managed host with group and individual. 
+############
+ansible-inventory --list --yaml
+
+To check the default ansible collection and modules, if we remove ansible, we can still get  it from ansible core as 
+with ansible.builtin.ping
+Installing manaully get the precedence 
+If the collection is installed by python, it "won't" remove the collection instaed it will remove by manaully installe collection.
+###########################
+ansible-galaxy collection list <collection>
+ansible-doc --list
+ansible-doc -t inventory <collection>
+ansible-galaxy collection install <comumnity.general:5.5.0>
+
+
+Fully qualified
+###############
+ansible.builtin.ping           module/connection pluging/etc
+namespace collection content   content type

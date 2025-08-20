@@ -1,0 +1,50 @@
+- name: copy module test
+  hosts: node1
+  tasks:
+    - file: name=/home/ec2-user/hello state=touch
+    - copy: dest=/home/ec2-user/hello content=world
+    - command: date
+- hosts: node2
+  become: yes
+  tags: httpd
+  diff: true
+  tasks:
+    - name: install apache
+      dnf:
+        name: httpd
+        state: latest
+    - name: start httpd service
+      when: "ansible_distribution == ubuntu"
+      service:
+        name: httpd
+        state: stopped
+        enabled: yes
+- hosts: web
+  become: true
+  gather_subset:
+    - '!min'
+    - processor
+  # gather subset inform in below article 
+
+  # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/setup_module.html
+  tasks:
+    - debug:
+        var: ansible_facts
+- hosts: localhost
+  become: yes
+  tags: prereq
+  tasks:
+    - name: pre-request fro community.docker
+      apt:
+        name: python3-requests
+        state: latest
+    - name: Create container to use as ansible managed nodes
+      community.docker.docker_container:
+        name: "c{{ item }}"
+        image: python
+        detach: true
+        tty: true
+        # command: sleep infinity ---> This also use to make the conatiner to run in background
+      loop: "{{ range(1,4) }}"
+
+#Red Hat Certified Specialist in Linux Diagnostics and Troubleshooting (EX342)
