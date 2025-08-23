@@ -1,0 +1,7 @@
+- hosts: all
+  vars:
+    my_server_port: 80
+  tasks:
+    - ansible.builtin.template:
+        scr: server.conf.j2
+        dest: /etc/server.conf

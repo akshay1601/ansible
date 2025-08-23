@@ -1,0 +1,62 @@
+#https://gist.github.com/rbq/886587980894e98b23d0eee2a1d84933 -- docker install with ansible
+- name: Install Docker on Ubuntu
+  hosts: all
+  become: yes
+  tasks:
+    - name: dump some facts
+      debug:
+        var: ansible_distribution
+      when: ansible_distribution == "Ubuntu"
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+      when: ansible_distribution == "Ubuntu"
+    - name: Install required packages
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - software-properties-common
+      when: ansible_distribution == "Ubuntu"
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+      when: ansible_distribution == "Ubuntu"
+    - name: Add Docker APT repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/{{ ansible_system | lower }}/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable
+        state: present
+      when: ansible_distribution == "Ubuntu"
+    - name: Install Docker Engine
+      apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      loop:
+        - docker-ce
+        - docker-ce-cli
+        - containerd.io
+        - docker-buildx-plugin
+        - docker-compose-plugin
+      when: ansible_distribution == "Ubuntu"
+    - name: Add remote user to docker group
+      user:
+        name: "{{ item }}"
+        groups: docker
+        append: yes
+      loop:
+        - ubuntu
+      when: ansible_distribution == "Ubuntu"
+    - community.docker.docker_container:
+        name: "c{{ item }}" # This is known as Jinja template and inside its jija expression, 
+        # it will evalute to the values of the loop list variable. 
+
+        image: python
+        tty: true
+        interactive: true
+      when: ansible_distribution == "Ubuntu"
+      loop: "{{ range(1,4) }}"

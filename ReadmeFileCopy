@@ -316,8 +316,8 @@ Example:
       - c2
 --------------------------------------------------------------------------
 
-range() function is used looping over the conatiner module to create mutiple conatiners. instead hardcoding
-the vaules in loop.
+range() function: is used looping over the conatiner module to create mutiple conatiners. instead hardcoding
+the vaules in loop
 
 Example:
 - name: Create container to use as ansible managed nodes
@@ -336,3 +336,120 @@ Example:
     when: ansible_distribution == "Ubuntu"
     loop: "{{ range(1,4) }}"
     
+--------------------------------------------------------------------------
+Static Inventory for a container with ansible-connection:
+Create static.ini file and add below line c1 is the docker container name and other are collection 
+for docker connection.
+# c1 ansible_connection=community.docker.docker
+
+--------------------------------------------------------------------------
+Dynamic Inventory plugin for a docker container:
+
+Create a file with name <any-name>-docker.yaml (at the end of file "docker" name should be there its mandatory)
+Add below file to access the docker api, uncomment when you update the file.
+#plugin: community.docker.docker_containers
+#docker_host: tcp://172.31.92.193:2375
+
+To access the docker container you need to Configure remote access for Docker daemon in you managed nodes.
+# https://docs.docker.com/engine/daemon/remote-access/#configuring-remote-access-with-daemonjson
+tcp://127.0.0.1:2375 This need to be replace with you private IP.
+Once done you need to open the port 2375 fro non secure or If you are using TLS port 2376.
+Then try to ping the conatiners with below command,
+# ansible -m ping -i dynamic-docker.yaml all
+
+Once done update the ansible.cfg file with the dynamic-docker.yaml file so you won't be explictly 
+add the file in command.
+--------------------------------------------------------------------------
+interpreter discovery warning:
+Suppressing the python interpreter discovery warning
+below cammand will help you to get the configuration for adding the python, you just have to 
+search for fallback.
+# ansible-config list 
+add below line in ansible.cfg to Suppressed the python interpreter discovery warning
+# interpreter_python= auto_silent
+--------------------------------------------------------------------------
+
+Below command help to control the task parallelism, like the task will be execute with 2 count as mentioned.
+# ansible-playbook rolling.yml --forks 2 
+--------------------------------------------------------------------------
+Serial Keyword:
+Using the serial keyword the all the task will be executed in count mananer,(To batch nodes)
+If we have 3 task and we mentioned the serial in playbook as 3, then playbook will be executed 3 times,
+as per nodes.
+1 task, 2nd task and 3rd task -- repeat -- repeat (copy files, configure web server -- repeat -- repeat)
+Example:
+- name: Create container to use as ansible managed nodes
+  hosts: all
+  serial: 3
+  tasks:
+  - name: copy files
+    command: sleep 1
+  - name: configure web server
+    command: sleep 1
+--------------------------------------------------------------------------
+
+Dynamic files with template module :
+
+Jinja technique to get the varible dynamically, if you want example please use the files template.yml
+and server.conf.j2 file will help to uderstand in detail way.
+
+# ansible -m command -a 'ls /etc/server.conf' -i dynamic-docker.yaml  all   - will check if that exist
+# ansible-playbook template.yml -i dynamic-docker.yaml -- will execute on the docker nodes
+# ansible -m command -a 'ls /etc/server.conf' -i dynamic-docker.yaml  all  -- last will check if that updated.
+
+--------------------------------------------------------------------------
+
+Cleanup container with state:absent and force_kill:true :
+
+Example:
+- name: Create container to use as ansible managed nodes
+  hosts: all
+  tasks:
+  - name: dump some facts
+    debug:
+      var: ansible_distribution
+    when: ansible_distribution == "Ubuntu"
+  - community.docker.docker_container:
+      name: "c{{ item }}"  # This is known as Jinja template and inside its jija expression, 
+# it will evalute to the values of the loop list variable. 
+      image: python  
+      tty: true
+      interactive: true
+      state: absent  # garcefull stopping of container 
+      force_kill: true  # bypass garcefull stopping of container
+    when: ansible_distribution == "Ubuntu"
+    loop: "{{ range(1,4) }}"
+    
+--------------------------------------------------------------------------
+
+module_defaults: Reduce the repetative module Args 
+
+Example:
+- name: Create container to use as ansible managed nodes
+  hosts: all
+  module_defaults:
+    community.docker.docker_container:
+      force_kill: true
+      state: absent
+  tasks:
+  - name: dump some facts
+    debug:
+      var: ansible_distribution
+    when: ansible_distribution == "Ubuntu"
+  - community.docker.docker_container:
+      name: "c{{ item }}"  # This is known as Jinja template and inside its jija expression, 
+# it will evalute to the values of the loop list variable. 
+      image: python  
+      tty: true
+      interactive: true
+    when: ansible_distribution == "Ubuntu"
+    loop: "{{ range(1,4) }}"
+  - community.docker.docker_container:
+      name: sleeper
+      image: python
+      command: sleep infinity  
+      tty: true
+      interactive: true
+    when: ansible_distribution == "Ubuntu"
+    loop: "{{ range(1,4) }}"
+
