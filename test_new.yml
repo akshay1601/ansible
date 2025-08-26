@@ -5,3 +5,8 @@
       dnf:
         name: httpd
         state: latest
+    - name: enable https
+      service:
+        name: httpd
+        state: started
+        enabled: yes
