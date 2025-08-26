@@ -1,4 +1,4 @@
-- hosts: web
+- hosts: patch
   become: yes
   tasks:
     - name: install apache
