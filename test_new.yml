@@ -10,3 +10,8 @@
         name: httpd
         state: started
         enabled: yes
+    - name: enable https
+      service:
+        name: httpd
+        state: started
+        enabled: yes
