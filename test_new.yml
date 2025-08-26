@@ -2,6 +2,6 @@
   become: yes
   tasks:
     - name: install apache
-      apt:
-        name: apache2
+      dnf:
+        name: httpd
         state: latest
