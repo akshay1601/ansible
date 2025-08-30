@@ -1,0 +1,6 @@
+{% for host in groups['all'] %}
+        {% if '34.236.151.229' in host %}
+                Private IP: {{ hostvars[host]['ansible_default_ipv4']['address'] }}
+                Ansible Machine ID: {{ hostvars[host]['ansible_machine_id'] }}
+        {% endif %}
+{% endfor %}

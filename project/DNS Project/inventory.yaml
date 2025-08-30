@@ -1,0 +1,16 @@
+all:
+  children:
+    dns_servers:
+      hosts:
+        ansible-managed-host:
+          ansible_host: 172.31.80.128
+      vars:
+        domains:
+          - domain: example.com
+            records:
+              - type: "A"
+                host: "www"
+                ip: "172.31.80.128"
+              - type: "A"
+                host: "pluralsight"
+                ip: "192.0.2.101"

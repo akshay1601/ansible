@@ -1,0 +1,25 @@
+- name: Managing Users with variables
+  hosts: webservers
+  vars_files: vars/comman_users.yaml
+  tasks:
+    - name: Create group users
+      user:
+        name: "{{item.name}}"
+        uid: "{{item.uid}}"
+        state: present
+      loop: "{{default_user}}"
+      when: create_default_users #If the its true it will create all user.
+    - name: CReate hosts Users
+      user:
+        name: "{{item.name}}"
+        uid: "{{item.uid}}"
+        state: present
+      loop: "{{host_users}}"
+    - name: Conditional create user from list
+      user:
+        name: "{{item.name}}"
+        state: present
+        uid: "{{item.uid}}"
+        groups: "{{item.group}}"
+      loop: "{{user_list}}"
+      when: item.create # WIll check if the create is true then will create the user else it will not 

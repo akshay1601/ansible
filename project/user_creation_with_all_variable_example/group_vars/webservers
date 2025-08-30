@@ -1,0 +1,6 @@
+create_default_users: true
+default_user:
+  - name: alice
+    uid: 1101
+  - name: bob
+    uid: 1102

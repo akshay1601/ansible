@@ -453,3 +453,171 @@ Example:
     when: ansible_distribution == "Ubuntu"
     loop: "{{ range(1,4) }}"
 
+--------------------------------------------------------------------------
+
+Host Delegation: 
+
+- hosts: all
+  become: yes
+  tasks:
+    - name: install apache
+      apt:
+        name: apache2
+        state: latest
+    - name: enable https
+      service:
+        name: apache2
+        state: started
+        enabled: yes
+    - name: Adding index file
+      file:
+        path: /var/www/html/index.html
+        state: touch
+    - name: Add content to index.file
+      copy:
+        content: "Akshay Virkhare"
+        dest: /var/www/html/index.html
+      register: output
+    - name: Check the status of the remote server
+      uri:
+        url: http://{{ inventory_hostname }}
+        method: GET
+        timeout: 30
+        status_code: 200
+        return_content: yes
+      delegate_to: p1
+      register: webresult
+    - debug: msg="Register ouput is {{webresult}}"
+
+
+--------------------------------------------------------------------------
+#ansible-playbook mutliple.yaml --tags user -- with this only user tag will run
+#ansible-playbook mutliple.yaml --skip-tags user  -- with this it will run all except user tag.
+
+Example:
+- name: Mutiple Play
+  hosts: p1
+  tasks:
+    - name: Install httpd on p1
+      dnf:
+        name: httpd
+        state: present
+    - name: create user on p1
+      user:
+        name: akshaynew
+        state: present
+      tags: user
+- name: Second Play
+  hosts: p2
+  tasks:
+    - name: Install httpd on p2
+      dnf:
+        name: httpd
+        state: present
+    - name: Craete user on p1
+      user:
+        name: shrutinew
+        state: present
+      tags: user
+--------------------------------------------------------------------------
+Create user with loop with list, variable list in vars and condition to create user with guest.
+loop let you repeat the same task for mutiple times, each time using different or set of values
+When decide which task ot play to run
+
+Example:
+- name: Using Conditional
+  hosts: p1
+  vars:
+    create_user: true
+    user_name: andrei
+    users:
+      - ana
+      - jim
+      - guest
+    user_count: 2
+  tasks:
+    - name: Create a user using condition
+      user:
+        name: "{{ user_name }}"
+        state: present
+    - name: Create user from the list
+      user:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - user1
+        - user2
+        - user3
+    - name: Create user from a list variable skipping the user guest
+      user:
+        name: "{{item}}"
+        state: present
+      loop: "{{ users }}"
+      when: item != 'guest'
+    - name: Interger Comparison
+      debug:
+        msg: "We are creating the more than one user"
+      when: user_count > 1
+
+--------------------------------------------------------------------------
+
+varible:
+
+1) Group variable defind in the inventory has low proirity 
+2) Then Group varible defined in the files in a group_vars sub-directory
+3) followed by Host varible defind in the inventory 
+4) Host variable defined in files in host_vars sub-directory take over group_vars
+5) Host facts discoverd at runtime.
+
+
+Example:
+I have attached this example in the code. please check the user creation with all varible example folder. 
+---
+- name: show variables 
+  hosts: webservers
+  vars_files:
+    - vars/comman_users.yaml
+  vars:
+    play_var: This was defind in the playbook
+  tasks:
+    - name: SHow group_vars user
+      debug:
+        var: default_user
+    - name: show host_vars user
+      debug:
+        var: host_users
+    - name: SHow Conditional user list
+      debug:
+        var: user_list
+    - name: Show play-level variable
+      debug:
+        var: play_var
+
+- name: Managing Users with variables
+  hosts: webservers
+  vars_files: vars/comman_users.yaml
+  tasks:
+    - name: Create group users
+      user:
+        name: "{{item.name}}"
+        uid: "{{item.uid}}"
+        state: present
+      loop: "{{default_user}}"
+      when: create_default_users
+    - name: CReate hosts Users
+      user:
+        name: "{{item.name}}"
+        uid: "{{item.uid}}"
+        state: present
+      loop: "{{host_users}}"
+    - name: Conditional create user from list
+      user:
+        name: "{{item.name}}"
+        state: present
+        uid: "{{item.uid}}"
+        groups: "{{item.group}}"
+      loop: "{{user_list}}"
+      when: item.create
+
+--------------------------------------------------------------------------
+

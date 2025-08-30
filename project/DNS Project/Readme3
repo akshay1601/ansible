@@ -1,0 +1,30 @@
+Confirm DNS Functionality from Ansible Controller
+In this challenge, you will validate that the recent changes to your Ansible-managed DNS server are working as expected using the dig and nslookup tools. You will also add a new record to the DNS server through Ansible, and validate that the new record is working as expected.
+
+Both the dig and nslookup tools are the most popular utilities in any DNS administrator's toolkit. You will learn their basic usage in this challenge, while also using them to prove that your Ansible-managed DNS server is operating as expected.
+
+In the TERMINAL window of Visual Studio Code, execute the dig @172.31.24.11 example.com +tcp command.
+
+The AUTHORITY SECTION output of this command will contain the State of Authority (SOA) DNS record housed in the DNS server. You will see that ns.example.com is considered the primary name server for this domain, and admin.example.com represents the contact information for the administrator of the domain.
+
+Note the @172.31.24.11 component of this command, which instructs dig to query your Ansible-managed DNS server at that IP.
+Note the +tcp component of this command, which instructs dig to use the TCP protocol to resolve DNS for the example.com domain. By default, dig (and most DNS resolvers) use the UDP protocol.
+Now add the subdomain prefix of www. to the command:
+
+dig @172.31.24.11 www.example.com +tcp
+The ANSWER SECTION will indicate that the DNS server has an A record resolving www.example.com to an IPv4 address of 172.31.24.11.
+
+Run the nslookup -vc www.example.com 172.31.24.11 command.
+
+The output of this command will indicate that www.example.com resolves to an IPv4 address of 172.31.24.11.
+
+Now run the dig @172.31.24.11 www.example.com +tcp +short command.
+
+The output of this command will indicate that www.example.com resolves to an IPv4 address of 172.31.24.11
+
+Note the +short component of this command, which instructs dig to output a much shorter version of the answer to our DNS query.
+Add the following to inventory.yaml:
+
+              - type: "A"
+                host: "pluralsight"
+ip: "192.0.2.100"

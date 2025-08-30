@@ -1,0 +1,96 @@
+Creating and Populating Basic BIND DNS Configuration Files
+In this challenge, you will build a basic Ansible playbook that installs the BIND9 DNS server on a managed host. You will also build a simple Jinja2 template representing BIND9 DNS server configuration options, which your Ansible playbook will deploy to the managed host.
+
+This lab is based on concepts covered in Getting Started with Ansible.
+
+Note: If you get any Software Updater pop-ups during the lab, you can ignore those, and click Remind Me Later.
+
+Open the Ansible Control Node console within the lab environment.
+
+In the upper-left corner of the Ubuntu desktop, click Applications > Development > Visual Studio Code.
+
+In the upper-left of Visual Studio Code, click File > Open Folder... In the window that appears, select the ansible-project directory, then click Open.
+
+Check the Trust box, and click Yes, I trust the authors to proceed.
+
+Click Terminal > New Terminal.
+
+At the bottom of Visual Studio Code, a window pane will open with a Bash shell prompt for the Ubuntu desktop environment.
+
+In the left-hand pane of Visual Studio Code that displays the file structure of the ansible-project directory, double click on the inventory.yaml file to open the Ansible inventory file.
+
+Open playbook.yaml, which is the Ansible playbook file. This file is currently empty. Populate it with the following content, then save the file:
+
+- name: Install and Configure BIND DNS
+  hosts: dns_servers
+  tasks:
+    - name: Install bind9 package
+      ansible.builtin.apt:
+        name: bind9
+        state: present
+      become: true
+This content uses the ansible.builtin.apt module to validate the bind9 package is installed on the managed host:
+
+In the TERMINAL window of Visual Studio Code, execute the ansible-playbook playbook.yaml command to run the Ansible playbook you've just created.
+
+The output should indicate that the bind9 package is already installed on the managed host.
+
+Note: The managed host in this lab environment does not have Internet access.
+Open named.conf.options.j2, whic is a Jinja2 template for the BIND DNS server configuration file. This file is currently empty. Populate it with the following content and save the file:
+
+options {
+    directory "/var/cache/bind";
+    dnssec-validation auto;
+    listen-on-v6 { any; };
+};
+Add the following content to the playbook.yaml file:
+
+    - name: Configure named.conf.options
+      ansible.builtin.template:
+        src: named.conf.options.j2
+        dest: /etc/bind/named.conf.options
+      become: true
+This renders the Jinja2 template for the BIND DNS server configuration file, and creates a file with the corresponding content at /etc/bind/named.conf.options.
+
+Ensure you maintain the exact spacing so the file is correct; spacing is important in YAML files.
+
+(Save the file, and do this whenever you make a change to a file.)
+
+In the TERMINAL, execute ansible-playbook playbook.yaml
+
+The output should indicate that the new task you added was executed.
+
+Add the following content to the bottom of the playbook.yaml file
+
+    - name: Restart BIND DNS server
+      ansible.builtin.service:
+        name: bind9
+        state: restarted
+      become: true
+This restarts the BIND DNS service on the managed host after all DNS changes are made.
+
+In the TERMINAL, execute the ansible-playbook playbook.yaml
+
+The output should indicate that the service for the BIND9 DNS server was restarted on the managed host.
+
+At the conclusion of this challenge, you should have a playbook.yaml file with contents identical to the screenshot below.- name: Install and Configure BIND DNS
+
+  hosts: dns_servers
+  tasks:
+    - name: Install bind9 package
+      ansible.builtin.apt:
+        name: bind9
+        state: present
+      become: true
+    - name: Configure named.conf.options
+      ansible.builtin.template:
+        src: named.conf.options.j2
+        dest: /etc/bind/named.conf.options
+      become: true
+    - name: Restart BIND DNS server
+      ansible.builtin.service:
+        name: bind9
+        state: restarted
+      become: true
+
+You should also have a named.conf.options.j2 file with contents identical to the screenshot below.Furthermore, the output of the last ansible-playbook playbook.yaml command should have identical output to the screenshot below:

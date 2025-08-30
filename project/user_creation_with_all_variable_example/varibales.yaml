@@ -1,0 +1,19 @@
+- name: show variables
+  hosts: webservers
+  vars_files:
+    - vars/comman_users.yaml
+  vars:
+    play_var: This was defind in the playbook
+  tasks:
+    - name: SHow group_vars user
+      debug:
+        var: default_user
+    - name: show host_vars user
+      debug:
+        var: host_users
+    - name: SHow Conditional user list
+      debug:
+        var: user_list
+    - name: Show play-level variable
+      debug:
+        var: play_var

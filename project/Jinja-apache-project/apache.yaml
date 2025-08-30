@@ -1,0 +1,50 @@
+- hosts: all
+  become: yes
+  gather_facts: true
+  tasks:
+    - name: install apache
+      apt:
+        name: apache2
+        state: latest
+    - name: Adding index file
+      file:
+        path: /var/www/html/index.html
+        state: touch
+    - name: Add content to index.file
+      copy:
+        content: "test"
+        dest: /var/www/html/index.html
+    - name: Add template for 172.31.29.101
+      template:
+        src: ansible_fact1.j2
+        dest: /var/www/html/index.html
+      register: indexchange
+      when: ansible_default_ipv4['address'] == "172.31.29.101"
+    - name: Restarted https
+      service:
+        name: apache2
+        state: restarted
+        enabled: yes
+      when: indexchange.changed
+    - name: Add template for 172.31.17.104
+      template:
+        src: ansible_fact2.j2
+        dest: /var/www/html/index.html
+      register: indexchange
+      when: ansible_default_ipv4['address'] == "172.31.17.104"
+    - name: Restarted https
+      service:
+        name: apache2
+        state: restarted
+        enabled: yes
+      when: indexchange.changed
+    - name: Check the status of the remote server
+      uri:
+        url: http://{{ inventory_hostname }}
+        method: GET
+        timeout: 30
+        status_code: 200
+        return_content: yes
+      delegate_to: 34.236.151.229
+      register: webresult
+    - debug: msg="Register ouput is {{webresult}}"

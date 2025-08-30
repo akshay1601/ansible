@@ -1,0 +1,127 @@
+To install Ansible tower in rhel 8 
+https://infotechys.com/install-ansible-tower-on-rhel-9/  -- This KB help to install the anisble tower
+To download the specific version for ansible tower use below KB
+https://releases.ansible.com/ansible-tower/setup/
+
+Requirment for ansible tower:
+https://docs.ansible.com/ansible-tower/latest/html/quickinstall/prepare.html#installation-and-reference-guide
+
+1) Need to install ansible on server
+2) DO not update the server, do not install python
+2) sudo dnf install -y git wget 
+3) ansible-galaxy collection install community.general  -- optional 
+4) Get the file from the Document from laptop and unzip in the server.
+5) ANSIBLE_BECOME=true ./setup.sh
+In running installation it will give you insufficient RAM issue please use below KB to resolve the issue
+https://bakingclouds.com/resolve-error-occurred-while-running-ansible-tower-installation/
+
+6) After successfull installation you will not get site on the browser for that use below KB to resolve the issue.
+https://www.devopsschool.com/forum/d/440-ansible-tower-access-issues/2  -- use 2nd method
+
+Below step make the site up and running. 
+
+    1  hostnamectl
+    2  sudo dnf install ansible
+    3  sudo dnf install ansible
+    4  sudo vi /etc/ssh/sshd_config
+    sudo alternatives --set python /usr/bin/python3.12
+    5  sudo passwd
+    6  sudo systemctl restart sshd
+    7  sudo passwd
+    8  sudo passwd ec2-user
+    9  ls -l
+   10  sudo dnf install -y git wget
+   11  python3
+   12  sudo dnf install unzip
+   13  unzip ansible-tower-setup-3.8.6-2.zip ;
+   14  ls -l
+   15  cd ansible-tower-setup-3.8.6-2
+   16  vi inventory
+   17  ANSIBLE_BECOME=true ./setup.sh
+   18  cd /etc/tower/
+   19  ls -l
+   20  mv tower.cert tower.cert.old
+   21  sudo mv tower.cert tower.cert.old
+   22  sudo mv tower.key tower.key.old
+   23  sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048     -keyout /etc/tower/tower.key     -out /etc/tower/tower.crt     -subj "/CN=54.209.103.255"     -addext "keyUsage = digitalSignature, keyEncipherment"     -addext "extendedKeyUsage = serverAuth"
+   24  sudo vi /etc/nginx/nginx.conf
+   25  sudo systemctl restart nginx
+   26  sudo systemctl restart ansible-tower
+   27  python
+   28  history
+
+
+
+New command
+
+    1  sudo vi /etc/ssh/sshd_config
+    2  sudo passwd ex2-user
+    3  sudo passwd ec2-user
+    4  sudo systemctl restart sshd
+    5  sudo dnf install python3.12
+    6  python --version
+    7  which python
+    8  sudo alternatives --set python /usr/bin/python3.12
+    9  python
+   10  whoch python
+   11  which python
+   12  sudo dnf install ansible
+   13  sudo dnf install python3.12-pip
+   14  sudo pip3 list
+   15  sudo pip3.12 list
+   16  ls -l
+   17  hsi
+   18  pip3.12  install ansible
+   19  ansible --version
+   20  history
+
+
+sudo dnf install ansible
+sudo dnf install -y git wget unzip zip
+unzip ansible-tower-setup-3.8.6-2-new.zip
+ANSIBLE_BECOME=true ./setup.sh
+ANSIBLE_BECOME=true ./setup.sh -b  -- Backup ansible-tower
+ANSIBLE_BECOME=true ./setup.sh -r  -- resotre the ansible-tower
+
+
+Install tower-cli and use cli to create the resources.
+
+   50  sudo dnf install python3 python3-pip
+   51  pip install ansible-tower-cli
+   52  pip3 install ansible-tower-cli
+   53  sudo pip3 install ansible-tower-cli
+   54  tower-cli job launch --help
+   55  ls -al
+   56  tower-cli config
+   57  tower-cli config verify_ssl false
+   58  tower-cli config
+   59  ls -la
+   60  vi .tower_cli.cfg
+   61  tower-cli launch list
+   62  tower-cli job_template list
+   63  tower-cli config username admin
+   64  tower-cli config password redhat
+   65  tower-cli job_template list
+   66  cat .tower_cli.cfg
+   67  tower-cli user list
+   68  tower-cli job_template list
+   69  tower-cli job lunch --job-template=12
+   70  tower-cli job launch --job-template=12
+   71  tower-cli jon monitor 49
+   72  tower-cli job monitor 49
+   73  tower-cli job launch --job-template=12 --monitor
+   74  tower-cli --help
+   75  tower-cli workflow_job list
+   76  tower-cli workflow list
+   77  tower-cli job launch --job-template=13 --monitor
+   78  tower-cli job launch --job-template=12 --monitor
+   79  tower-cli workflow list
+
+
+Use curl to get the api on ansible tower
+
+
+   31  curl -k -H 'Content-Type: application/json' -X GET --user admin:redhat localhost /api/v2/job_templates
+   32  curl -k -H 'Content-Type: application/json' -X GET --user admin:redhat localhost/api/v2/job_templates
+   33  curl -k -H 'Content-Type: application/json' -X GET --user admin:redhat localhost/api/v2/job_templates/
+   34  curl -k -H 'Content-Type: application/json' -X GET --user admin:redhat localhost/api/v2/job_templates/ | jq

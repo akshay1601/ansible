@@ -1,0 +1,115 @@
+Use Jinja2 Templates to Deploy BIND DNS Zone Database
+In this challenge, you will explore the Jinja2 templating language in more detail by building a Jinja2 template representing a BIND DNS server zone file. You will then modify the existing Ansible playbook file to render and deploy this Jinja2 template to the managed host.
+
+The Jinja2 templating language supports a basic set of conditional logic, such as if/else statements and for loops, that make it easy to template configuration files that would normally be complex to manage manually. This challenge will investigate this conditional logic in more detail.
+
+1) Add the following to the inventory.yaml file:
+
+      vars:
+        domains:
+- domain: example.com
+This adds a domain variable that should be configured on the managed DNS server.
+
+2) Open the zone.j2 file and populate it with the following content.:
+
+$TTL 86400
+@ IN SOA ns.{{ domain_data.domain }}. admin.{{ domain_data.domain }}. (
+  2023082001 ; Serial
+  3600       ; Refresh
+  1800       ; Retry
+  604800     ; Expire
+  86400 )    ; Minimum
+@ IN NS ns.{{ domain_data.domain }}.
+ns IN A {{ nameserver_ip }}
+
+This Jinja2 template creates an SOA (Start of Authority) DNS record for a given domain. This record contains administrative information about the zone, and is a fundamental building block for any DNS server acting authoritatively for a domain.
+
+.You can see this Wikipedia SOA article for more information.
+.Namely, you can see a concrete instance of an SOA, an example of what the above template results in.
+.The template adds in various variables that were defined in the inventory YAML file. These variables include {{ domain_data.domain }}, and {{ nameserver_ip }}
+3) Add a new second-last task to the playbook.yaml file:
+
+    - name: Deploy zone files using Jinja2 templates
+      ansible.builtin.template:
+        src: zone.j2
+        dest: /etc/bind/{{ item.domain }}.zone
+      loop: "{{ domains }}"
+      vars:
+        domain_data: "{{ item }}"
+        nameserver_ip: "{{ ansible_host }}"
+become: true
+
+This task deploys this Jinja2 template to the appropriate location in the /etc/bind/ directory of each managed host (there's only one in this lab).
+
+Note the use of the loop: key in this playbook: this construct loops through each domain defined in the domains variable from the inventory.yaml file. The domain_data and nameserver_ip variables, used in the zone.j2 Jinja2 template, are defined under the vars key.
+
+The dest key specifies a destination filepath on the managed host, and the value includes {{ item.domain }}, which references the variable from inventory.yaml, hence results in example.com. Thus, the final destination will be /etc/bind/example.com.zone
+
+4) Add the following to the bottom of named.conf.options.j2:
+
+{% for domain_data in domains %}
+zone "{{  domain_data.domain }}" {
+    type master;
+    file "/etc/bind/{{ domain_data.domain }}.zone";
+};
+{% endfor %}
+
+This configuration allows the BIND9 DNS server to act as a name server for the zone you previously configured
+
+5) In the TERMINAL, execute the ansible-playbook playbook.yaml command:
+
+The output of this command should indicate that the named.conf.options and example.com.zone files were created on the managed host. The output should also indicate that the BIND9 service was restarted on the managed host.
+
+6) Add variables to the inventory.yaml file, representing a list of records that should be present in the example.com zone:
+
+            records:
+              - type: "A"
+                host: "www"
+ip: "172.31.24.11"
+
+7) Add a for loop to the bottom of the zone.j2 file:
+
+{% for record_data in domain_data.records %}
+{{ record_data.host }} IN {{ record_data.type}} {{ record_data.ip }}
+{% endfor %}
+
+DNS records are added to the zone file, based upon records associated with the corresponding domain.
+
+8) In the TERMINAL, execute the ansible-playbook playbook.yaml command:
+
+The output of this command should indicate that the **example.com.**zone file was modified on the managed host with the newly added records (and that the BIND9 service was restarted)
+
+At the conclusion of this challenge, you should have an inventory.yaml file with content identical to the screenshot below.
+You should also have a named.conf.options.j2 file with content identical to the screenshot below.
+You should have a zone.j2 file with content identical to the screenshot below.And, your playbook.yaml file will have the following contents
+And, your playbook.yaml file will have the following contents:
+
+- name: Install and Configure BIND DNS
+  hosts: dns_servers
+  tasks:
+    - name: Install bind9 package
+      ansible.builtin.apt:
+        name: bind9
+        state: present
+      become: true
+    - name: Configure named.conf.options
+      ansible.builtin.template:
+        src: named.conf.options.j2
+        dest: /etc/bind/named.conf.options
+      become: true
+    - name: Deploy zone files using Jinja2 templates
+      ansible.builtin.template:
+        src: zone.j2
+        dest: /etc/bind/{{ item.domain }}.zone
+      loop: "{{ domains }}"
+      vars:
+        domain_data: "{{ item }}"
+        nameserver_ip: "{{ ansible_host }}"
+      become: true
+    - name: Restart BIND DNS server
+      ansible.builtin.service:
+        name: bind9
+        state: restarted
+      become: true
+
+Finally, the output of the last ansible-playbook playbook.yaml command should be identical to the screenshot below.
