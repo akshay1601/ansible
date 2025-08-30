@@ -1,0 +1,8 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: Add a variable user and variable primary group
+      ansible.builtin.user:
+        name: "{{ user_name }}"
+        group: "{{ group_name }}"
