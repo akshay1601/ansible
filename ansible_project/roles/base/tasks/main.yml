@@ -1,0 +1,9 @@
+---
+# tasks file for base
+- name: Install base package required by all system
+  ansible.builtin.package:
+    name:
+      - bash-completion
+      - git
+      - tree
+      - vim

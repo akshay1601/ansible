@@ -1,0 +1,7 @@
+---
+- name: Ensure basic roles
+  hosts: all
+  gather_facts: false
+  become: true
+  roles:
+    - base

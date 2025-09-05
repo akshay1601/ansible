@@ -1,0 +1,10 @@
+---
+# The posix collection needs to be added
+# ansible-galaxy collection install ansible.posix
+
+- name: Add Nginx Web Server
+  hosts: all
+  become: true
+  gather_facts: false
+  roles:
+    - nginx
