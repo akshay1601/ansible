@@ -1,0 +1,9 @@
+---
+- name: Install MySQL on RHEL 9 (Fresh Installation)
+  hosts: all
+  become: true
+  gather_facts: false
+  vars:
+    mysql_root_password: Password1
+  roles:
+    - mysql

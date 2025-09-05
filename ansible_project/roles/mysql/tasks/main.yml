@@ -1,0 +1,60 @@
+---
+# tasks file for mysql
+- name: Install MySQL packages and Python dependency
+  dnf:
+    name:
+      - mariadb-server
+      - python3.12-PyMySQL
+    state: present
+
+- name: Create custom my.cnf for initial setup
+  copy:
+    dest: /etc/my.cnf.d/custom.cnf
+    content: |
+      [mysqld]
+      default_authentication_plugin=mysql_native_password
+    mode: '0644'
+
+- name: Start and enable MySQL service
+  systemd:
+    name: mariadb
+    state: started
+    enabled: true
+
+# Check if we can already connect with the password
+- name: Check if MySQL root password is already set
+  community.mysql.mysql_info:
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+  register: password_check
+  changed_when: false
+  ignore_errors: true
+
+# Only set the password if the check failed
+- name: Set MySQL root password
+  community.mysql.mysql_user:
+    name: root
+    host: all
+    password: "{{ mysql_root_password }}"
+    plugin: mysql_native_password
+    state: present
+    login_unix_socket: /var/lib/mysql/mysql.sock
+  register: root_password_set
+  when: password_check is failed
+
+- name: Verify MySQL root password was set correctly
+  community.mysql.mysql_info:
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+  register: verify_connection
+  ignore_errors: true
+
+- name: Report success
+  debug:
+    msg: "MySQL root password has been set successfully"
+  when: verify_connection is success or password_check is success
+
+- name: Report failure
+  fail:
+    msg: "Failed to set MySQL root password. Check MySQL logs for details."
+  when: verify_connection is failed and password_check is failed
