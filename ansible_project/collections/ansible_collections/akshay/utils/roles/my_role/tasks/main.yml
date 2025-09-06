@@ -1,0 +1,6 @@
+---
+- name: a name
+  ansible.builtin.debug:
+    msg: "This is a role task"
+
+
