@@ -621,3 +621,183 @@ I have attached this example in the code. please check the user creation with al
 
 --------------------------------------------------------------------------
 
+Handler are trigger if a task report a chnaged state, if nothing chnages handeler won't run.
+Each Handler must be unique name so it should be referenced by notify.
+Run at the end 
+
+---
+- name: handler
+  hosts: all
+  become: true
+  tasks:
+    - name: Install apache2
+      apt:
+        name: apache2
+        state: latest
+    - name: Start apache2
+      service:
+        name: apache2
+        state: started
+    - name: Modify config 
+      lineinfile:
+        path: /etc/apache2/apache2.conf
+        line: "#Managed by ansible"
+        insertafter: EOF
+      notify: restart apache2
+    - name: Change the code
+      lineinfile:
+        path: /var/www/html/index.html
+        line: "#Welcome to new world"
+  handlers:
+    - name: restart apache2
+      service:
+        name: apache2
+        state: restarted
+
+--------------------------------------------------------------------------
+
+Ansible template:
+Ansible templates are just plain text files, but what makes them powerful is that they can include Jinja2 syntax
+This means you can embed variables, use conditionals, or even create loops inside your configuration files
+
+
+#Host Inventory
+
+#Current host summary
+
+host: {{ inventory_hostname }}
+hostname: {{ ansible_facts.hostname }}
+os: {{ ansible_facts.distribution }}
+memmory: {{ ansible_facts.memtotal_mb }} MB
+
+
+{% if ansible_facts.memtotal_mb > memmory_limit %}
+Warning not enough memmory
+{% endif %}
+
+
+Interfaces
+{% for iface in ansible_facts.interfaces %}
+- {{iface}}
+{% endfor %}
+
+#summary for all hosts
+{% for host in groups['all'] %}
+Hosts: {{host}}
+Hostname: {{ hostvars[host].ansible_facts.hostname }}
+os: {{ hostvars[host].ansible_facts.distribution }}
+Memory: {{ hostvars[host].ansible_facts.memtotal_mb }} MB
+
+Interfaces
+{% for iface in hostvars[host].ansible_facts.interfaces %}
+- {{iface}}
+{% endfor %}
+{% endfor %}
+---
+- name: Deploy server
+  hosts: all
+  vars:
+    memmory_limit: 3000
+  tasks:
+    - name: template
+      template:
+        src: mytemplate.j2
+        dest: "/home/ubuntu/{{ inventory_hostname }}_report.txt"
+
+--------------------------------------------------------------------------
+
+Ansible Vault:
+Ansible vault allows us to keep the data encrypted in order to maintain security and also 
+decrypt it when it needs to be used by playbooks. Using Ansible vault helps mitigate security risks, 
+especially when multiple people work together
+It converts readable content into encrypted text that only vault can decrypt
+The ansible‑vault decrypt command restores the file to its original readable form
+The ansible‑vault rekey command allows us to change the password of an encrypted file without decrypting and re‑encrypting it manually
+
+#ansible-vault create secrets.yaml  -- will create a secret with encrytpted password on file 
+#ansible-vault edit secrets.yaml  -- we can able to endit the secret file 
+#ansible-vault rekey secrets.yaml  -- chnage the encrypted password for the file 
+#ansible-playbook secret.yaml --vault-password-file vault.key   -- save the password in file and chnage permission to 600
+#ansible-playbook secret.yaml --vault-id first@prompt --vault-id second@prompt  -- will ask for both the password same time.
+
+--------------------------------------------------------------------------
+
+block:
+Control execution of script via marker
+
+---
+# deploy_custom_script.yml
+
+- name: Deploy custom script
+  hosts: all
+  become: false
+  vars:
+    marker_file: "/tmp/script_success"
+  tasks:
+    # Idempotent approach - uses marker file to track execution
+    - name: Check if script has been run before
+      stat:
+        path: "{{ marker_file }}"
+      register: marker
+    - name: Control execution of script via marker
+      block:
+        - name: Run custom script only if not run before
+          script: "script.sh"
+        - name: Create marker file to indicate script has been run
+          file:
+            path: "{{ marker_file }}"
+            state: touch
+            mode: '0644'
+      when: not marker.stat.exists
+
+--------------------------------------------------------------------------
+
+Roles:
+
+Organize automation into reuseable units
+Idea of our roles is it can encapsulate the complexity without it needing to be in our playbooks
+
+Example: Create role and write the task in any of the folder file in yaml format and then create yaml
+file in playbook and below is the example.
+
+- name: Ensure basic roles
+  hosts: all
+  gather_facts: false
+  become: true
+  roles:
+    - base
+
+--------------------------------------------------------------------------
+
+To create the collections:
+The command has to be ececuted under the project
+#ansible-galaxy collection init akshay.test
+CReate folder with name filter 
+#mkdir akshay/test/plugins/filter
+Create a custom python file with .py 
+# vi akshay/test/plugins/filter/custom_filter.py
+Once done you can able to execute the playbook
+
+I have create project in ansible in got.
+
+WHen testing is finished you can build and install collection, reverting back to then default collection path
+# cd collections/ansible_collections/akshay/test
+# ansible-galaxy collection build
+# ansible-galaxy collection install akshay-test-1.0.0.tar.gz
+
+After this you don't have to add the explict path for collection in ansible.cfg
+
+You can publish collection to galaxy,
+#ansible-galaxy collection publish akshay-test-1.0.0.tar.gz
+
+--------------------------------------------------------------------------
+Molecule:
+
+Molecule is a testing framework for roles.
+# pip install molecule 
+# dnf install molecule -- if rhel register
+1) delegated: The first driver that we'll take a look at is the default driver delegated. With delegated, we're delegating control of the virtual machines to some other system
+- default driver - out of box uses localhost   -can be delegated to cloud-env 
+2) podman/docker: - molecule is provisioning containers for a testing environment
+This can be really useful because the containers are lightweight, but there are always going to be problems if we want to be installing and managing services because they can be quite difficult to manage within a container
+3) Vagart: where vagrant then can control a full virtual machine environment, 

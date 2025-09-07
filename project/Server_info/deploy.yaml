@@ -1,0 +1,9 @@
+- name: Deploy server
+  hosts: all
+  vars:
+    memmory_limit: 3000
+  tasks:
+    - name: template
+      template:
+        src: mytemplate.j2
+        dest: "/home/ubuntu/{{ inventory_hostname }}_report.txt"
